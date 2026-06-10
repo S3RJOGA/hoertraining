@@ -178,9 +178,10 @@
       <input type="range" id="rate" min="50" max="130" step="1">
     </div>
     <div class="card">
-      <label>Stimme</label>
+      <label>Stimme <span class="sub">(★ = natürliche Stimme)</span></label>
       <select id="voiceSel"></select>
-      <p class="sub" style="margin-top:8px;">Tipp: In Microsoft Edge und auf dem iPhone/Android stehen natürliche Stimmen bereit, diese werden automatisch bevorzugt.</p>
+      <button class="btn-ghost" style="width:100%; margin-top:10px;" onclick="speak('Guten Tag! So klingt diese Stimme: drei, sieben, Haus, Mond, Garten.')">🔊 Stimme testen</button>
+      <p class="sub" style="margin-top:8px;">Klingt die Sprache wie ein Roboter? Dann hat dein Gerät nur einfache Stimmen installiert. Abhilfe: am PC die App in <b>Microsoft Edge</b> öffnen (natürliche Online-Stimmen), auf dem Handy in den Systemeinstellungen unter Sprachausgabe weitere deutsche Stimmen herunterladen. Neue Stimmen erscheinen hier automatisch.</p>
     </div>
   </section>
 
@@ -312,7 +313,9 @@ function loadVoices(){
   sel.innerHTML='';
   if(voices.length===0){ sel.innerHTML='<option>Standard-Stimme</option>'; return; }
   voices.forEach((v,i)=>{
-    const o=document.createElement('option'); o.value=i; o.textContent=v.name; sel.appendChild(o);
+    const o=document.createElement('option'); o.value=i;
+    o.textContent = (-voiceScore(v)>=50 ? '★ ' : '') + v.name;
+    sel.appendChild(o);
   });
   const idx = voices.findIndex(v=> v.name===S.voiceName);
   sel.value = idx>=0 ? idx : 0;
