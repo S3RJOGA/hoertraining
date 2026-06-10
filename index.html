@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0F6E56">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Hörtraining">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Hörtraining</title>
+<style>
+  :root{
+    --bg:#f2f5f9; --card:#ffffff; --ink:#1c2733; --muted:#5b6b7c;
+    --accent:#0F6E56; --accent-light:#E1F5EE; --accent-mid:#1D9E75;
+    --ok:#2e7d32; --bad:#c62828; --border:#d7dee8;
+  }
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif; background:var(--bg); color:var(--ink); font-size:17px; display:flex; flex-direction:column;}
+  main{flex:1; overflow-y:auto; padding:18px 16px calc(86px + env(safe-area-inset-bottom));}
+  .screen{display:none; max-width:520px; margin:0 auto;}
+  .screen.active{display:block;}
+  h1{font-size:1.4rem; color:var(--accent); margin-bottom:4px;}
+  h2{font-size:1.1rem; margin-bottom:10px;}
+  .sub{color:var(--muted); font-size:.9rem;}
+  .card{background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px; margin-bottom:14px;}
+  button{font-family:inherit; cursor:pointer; border:none; border-radius:14px; font-weight:600;}
+  .btn-main{width:100%; background:var(--accent); color:#fff; padding:16px; font-size:1.15rem;}
+  .btn-main:active{background:#085041;}
+  .btn-ghost{background:#fff; color:var(--accent); border:2px solid var(--accent); padding:12px 16px; font-size:1rem;}
+  .btn-ghost:disabled{color:#9fb3c8; border-color:#cdd9e5;}
+  button:disabled{opacity:.6;}
+  .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+  .statgrid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .stat{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px; text-align:center;}
+  .stat .num{font-size:1.5rem; font-weight:800; color:var(--accent);}
+  .stat .lbl{font-size:.8rem; color:var(--muted);}
+  .exlist button{display:flex; width:100%; align-items:center; gap:14px; background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px; margin-bottom:12px; font-size:1.1rem; color:var(--ink); text-align:left;}
+  .exlist .ico{width:46px; height:46px; border-radius:12px; background:var(--accent-light); color:var(--accent); display:flex; align-items:center; justify-content:center; font-size:1.4rem; flex-shrink:0;}
+  .exlist .d{font-size:.8rem; color:var(--muted); font-weight:400;}
+  label{display:block; font-weight:600; font-size:.9rem; margin-bottom:4px;}
+  select,input[type=text],textarea{width:100%; padding:12px; border:1px solid var(--border); border-radius:12px; font-size:1rem; background:#fff;}
+  input[type=range]{width:100%; accent-color:var(--accent); height:36px;}
+  .val{font-weight:700; color:var(--accent);}
+  .mini-mix{display:grid; grid-template-columns:auto 1fr auto; gap:6px 10px; align-items:center; font-size:.85rem; color:var(--muted);}
+  .playwrap{display:flex; justify-content:center; margin:18px 0 6px;}
+  .playbtn{width:92px; height:92px; border-radius:50%; background:var(--accent-light); color:var(--accent); font-size:2.2rem; display:flex; align-items:center; justify-content:center;}
+  .playbtn:active{background:#9FE1CB;}
+  .center{text-align:center;}
+  .feedback{margin-top:12px; font-size:1.05rem; font-weight:700; min-height:28px; text-align:center;}
+  .feedback.ok{color:var(--ok);} .feedback.bad{color:var(--bad);}
+  .sentbox{background:var(--accent-light); border-radius:12px; padding:14px; margin-top:12px; font-size:1.1rem; line-height:1.5;}
+  #numInput,#wordInput{font-size:1.3rem; text-align:center;}
+  .backbtn{background:none; color:var(--accent); font-size:1rem; padding:6px 0; margin-bottom:8px;}
+  .noisebtn{width:100%; background:var(--accent-light); color:var(--accent); padding:12px; font-size:1rem; border-radius:12px; margin-bottom:12px;}
+  .noisebtn.on{background:#fbe5e5; color:var(--bad);}
+  .bars{display:flex; align-items:flex-end; gap:6px; height:90px; margin:8px 0 2px;}
+  .bars div{flex:1; background:var(--accent-mid); border-radius:4px 4px 0 0; min-height:3px;}
+  .dlbl{display:flex; gap:6px; font-size:.75rem; color:var(--muted); text-align:center;}
+  .dlbl span{flex:1;}
+  .warn{background:#fff7e0; border:1px solid #e6c761; border-radius:12px; padding:10px 12px; font-size:.85rem; margin-top:10px;}
+  nav{position:fixed; bottom:0; left:0; right:0; background:var(--card); border-top:1px solid var(--border); display:flex; padding:8px 4px calc(8px + env(safe-area-inset-bottom));}
+  nav button{flex:1; background:none; color:var(--muted); font-size:.75rem; padding:4px 0; border-radius:0;}
+  nav button .nico{font-size:1.5rem; display:block; line-height:1.3;}
+  nav button.active{color:var(--accent);}
+  .typelist{font-size:.95rem;}
+  .typelist div{display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid var(--border);}
+  .typelist div:last-child{border-bottom:none;}
+</style>
+</head>
+<body>
+<main>
+
+  <!-- START -->
+  <section class="screen active" id="scr-home">
+    <p class="sub" id="greeting">Guten Tag</p>
+    <h1>Hörtraining</h1>
+    <p class="sub" style="margin-bottom:16px;">Sprache verstehen im Störgeräusch. Kopfhörer aufsetzen und los.</p>
+    <div class="statgrid" style="margin-bottom:14px;">
+      <div class="stat"><div class="num" id="hToday">0</div><div class="lbl">Durchgänge heute</div></div>
+      <div class="stat"><div class="num" id="hQuote">–</div><div class="lbl">Quote heute</div></div>
+      <div class="stat"><div class="num" id="hStreak">0</div><div class="lbl">Tage-Serie 🔥</div></div>
+      <div class="stat"><div class="num" id="hTotal">0</div><div class="lbl">Gesamt-Durchgänge</div></div>
+    </div>
+    <button class="btn-main" onclick="nav('train')">▶ Training starten</button>
+    <div class="warn">⚠️ Mit niedriger Lautstärke beginnen. Dieses Programm ersetzt keine audiologische Diagnostik oder Therapie.</div>
+  </section>
+
+  <!-- ÜBEN: AUSWAHL -->
+  <section class="screen" id="scr-train">
+    <h1>Üben</h1>
+    <p class="sub" style="margin-bottom:16px;">Wähle eine Übung. Wortmaterial: Freiburger Einsilber.</p>
+    <div class="exlist">
+      <button onclick="openEx('zahlen')"><span class="ico">🔢</span><span><b>Zahlen verstehen</b><br><span class="d">Ziffern oder zweistellige Zahlen eintippen</span></span></button>
+      <button onclick="openEx('woerter')"><span class="ico">🗣️</span><span><b>Wörter verstehen</b><br><span class="d">3 Freiburger Einsilber hören und eintippen</span></span></button>
+      <button onclick="openEx('saetze')"><span class="ico">💬</span><span><b>Sätze hören</b><br><span class="d">100 Sätze über das Hören, selbst bewerten</span></span></button>
+    </div>
+  </section>
+
+  <!-- ÜBUNG AKTIV -->
+  <section class="screen" id="scr-ex">
+    <button class="backbtn" onclick="nav('train')">‹ Zurück zur Auswahl</button>
+    <h2 id="exTitle"></h2>
+    <div class="card">
+      <div class="mini-mix">
+        <span>🗣️ Sprache</span><input type="range" id="exSpeech" min="10" max="100" step="1"><span class="val" id="exSpeechVal"></span>
+        <span>🔊 Lärm</span><input type="range" id="exNoise" min="0" max="100" step="1"><span class="val" id="exNoiseVal"></span>
+      </div>
+    </div>
+    <button class="noisebtn" id="noiseBtn" onclick="toggleNoise()">▶ Störgeräusch starten</button>
+
+    <div id="exZahlenOpts" hidden style="margin-bottom:10px;">
+      <select id="numMode">
+        <option value="digits">Drei einzelne Ziffern</option>
+        <option value="tens">Zweistellige Zahl 21–99 (Freiburger-Stil)</option>
+      </select>
+    </div>
+
+    <div class="playwrap"><button class="playbtn" id="playBtn" onclick="playStim()">▶</button></div>
+    <p class="center sub" id="exHint"></p>
+    <div class="row" style="justify-content:center; margin-top:8px;">
+      <button class="btn-ghost" id="repeatBtn" onclick="repeatLast()" disabled>↻ Wiederholen</button>
+      <button class="btn-ghost" id="showBtn" onclick="showSentence()" disabled hidden>📄 Text anzeigen</button>
+    </div>
+
+    <div id="answerArea" style="margin-top:14px;">
+      <input type="text" id="numInput" maxlength="3" inputmode="numeric" placeholder="___" hidden disabled>
+      <input type="text" id="wordInput" placeholder="Wort1 Wort2 Wort3" hidden disabled autocapitalize="none">
+      <div class="sentbox" id="sentText" hidden></div>
+      <div class="row" style="justify-content:center; margin-top:12px;" id="sentRate" hidden>
+        <button class="btn-ghost" style="color:var(--ok); border-color:var(--ok);" onclick="rateSentence(true)">✔ Verstanden</button>
+        <button class="btn-ghost" style="color:var(--bad); border-color:var(--bad);" onclick="rateSentence(false)">✘ Nicht verstanden</button>
+      </div>
+      <button class="btn-main" id="checkBtn" style="margin-top:12px;" onclick="checkAnswer()" hidden disabled>Prüfen</button>
+    </div>
+    <div class="feedback" id="exFb"></div>
+  </section>
+
+  <!-- VERLAUF -->
+  <section class="screen" id="scr-stats">
+    <h1>Verlauf</h1>
+    <p class="sub" style="margin-bottom:16px;">Deine Ergebnisse der letzten 7 Tage.</p>
+    <div class="statgrid" style="margin-bottom:14px;">
+      <div class="stat"><div class="num" id="sWeekQuote">–</div><div class="lbl">Quote diese Woche</div></div>
+      <div class="stat"><div class="num" id="sWeekTrials">0</div><div class="lbl">Durchgänge</div></div>
+    </div>
+    <div class="card">
+      <label>Trefferquote pro Tag</label>
+      <div class="bars" id="bars"></div>
+      <div class="dlbl" id="dlbl"></div>
+    </div>
+    <div class="card typelist" id="typeStats"></div>
+    <button class="btn-ghost" style="width:100%;" onclick="resetStats()">Verlauf zurücksetzen</button>
+  </section>
+
+  <!-- EINSTELLUNGEN -->
+  <section class="screen" id="scr-settings">
+    <h1>Einstellungen</h1>
+    <p class="sub" style="margin-bottom:16px;">Audio und Stimme anpassen.</p>
+    <div class="card">
+      <label>Störgeräusch-Art</label>
+      <select id="noiseType">
+        <option value="babble">Stimmengewirr (Café, synthetisch)</option>
+        <option value="pink">Rosa Rauschen (sprachähnlich)</option>
+        <option value="white">Weißes Rauschen</option>
+        <option value="brown">Tiefes Rauschen (Verkehr)</option>
+      </select>
+    </div>
+    <div class="card">
+      <label>Störgeräusch-Lautstärke <span class="val" id="noiseVal"></span></label>
+      <input type="range" id="noiseVol" min="0" max="100" step="1">
+      <label style="margin-top:14px;">Sprach-Lautstärke <span class="val" id="speechVal"></span></label>
+      <input type="range" id="speechVol" min="10" max="100" step="1">
+      <label style="margin-top:14px;">Sprechtempo <span class="val" id="rateVal"></span></label>
+      <input type="range" id="rate" min="50" max="130" step="1">
+    </div>
+    <div class="card">
+      <label>Stimme</label>
+      <select id="voiceSel"></select>
+      <p class="sub" style="margin-top:8px;">Tipp: In Microsoft Edge und auf dem iPhone/Android stehen natürliche Stimmen bereit, diese werden automatisch bevorzugt.</p>
+    </div>
+  </section>
+
+</main>
+
+<nav>
+  <button id="nav-home" class="active" onclick="nav('home')"><span class="nico">🏠</span>Start</button>
+  <button id="nav-train" onclick="nav('train')"><span class="nico">👂</span>Üben</button>
+  <button id="nav-stats" onclick="nav('stats')"><span class="nico">📊</span>Verlauf</button>
+  <button id="nav-settings" onclick="nav('settings')"><span class="nico">⚙️</span>Mehr</button>
+</nav>
+
+<script>
+"use strict";
+function el(id){ return document.getElementById(id); }
+function rnd(n){ return Math.floor(Math.random()*n); }
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=rnd(i+1); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+/* ================= SETTINGS (persistent) ================= */
+const S = Object.assign({noiseType:'babble', noiseVol:30, speechVol:80, rate:90, voiceName:''},
+  JSON.parse(localStorage.getItem('ht_settings')||'{}'));
+function saveS(){ localStorage.setItem('ht_settings', JSON.stringify(S)); }
+
+/* ================= NAVIGATION ================= */
+function nav(t){
+  document.querySelectorAll('.screen').forEach(s=> s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b=> b.classList.remove('active'));
+  el('scr-'+t).classList.add('active');
+  const nb = el('nav-'+t); if(nb) nb.classList.add('active');
+  speechSynthesis.cancel();
+  if(t==='home') renderHome();
+  if(t==='stats') renderStats();
+}
+
+/* ================= AUDIO ENGINE ================= */
+let ctx=null, noiseGain=null, modGain=null, noiseSrc=null, noiseFilter=null;
+let noisePlaying=false, babbleTimer=null;
+
+function ensureCtx(){
+  if(!ctx){
+    ctx = new (window.AudioContext||window.webkitAudioContext)();
+    modGain = ctx.createGain(); modGain.gain.value = 1;
+    noiseGain = ctx.createGain(); noiseGain.gain.value = sliderToGain(S.noiseVol);
+    modGain.connect(noiseGain); noiseGain.connect(ctx.destination);
+  }
+  if(ctx.state==='suspended') ctx.resume();
+}
+function sliderToGain(v){ return Math.pow(v/100,1.6)*0.55; }
+
+function makeNoiseBuffer(type){
+  const len = ctx.sampleRate*4;
+  const buf = ctx.createBuffer(2,len,ctx.sampleRate);
+  for(let ch=0; ch<2; ch++){
+    const d = buf.getChannelData(ch);
+    if(type==='white'){ for(let i=0;i<len;i++) d[i]=Math.random()*2-1; }
+    else if(type==='brown'){
+      let last=0;
+      for(let i=0;i<len;i++){ const w=Math.random()*2-1; last=(last+0.02*w)/1.02; d[i]=last*3.5; }
+    } else {
+      let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0;
+      for(let i=0;i<len;i++){
+        const w=Math.random()*2-1;
+        b0=0.99886*b0+w*0.0555179; b1=0.99332*b1+w*0.0750759; b2=0.96900*b2+w*0.1538520;
+        b3=0.86650*b3+w*0.3104856; b4=0.55000*b4+w*0.5329522; b5=-0.7616*b5-w*0.0168980;
+        d[i]=(b0+b1+b2+b3+b4+b5+b6+w*0.5362)*0.11; b6=w*0.115926;
+      }
+    }
+  }
+  return buf;
+}
+
+function startNoise(){
+  ensureCtx();
+  stopNoiseNodes();
+  const type = S.noiseType;
+  noiseSrc = ctx.createBufferSource();
+  noiseSrc.buffer = makeNoiseBuffer(type==='babble'?'pink':type);
+  noiseSrc.loop = true;
+  if(type==='babble'){
+    noiseFilter = ctx.createBiquadFilter();
+    noiseFilter.type='bandpass'; noiseFilter.frequency.value=1100; noiseFilter.Q.value=0.5;
+    noiseSrc.connect(noiseFilter); noiseFilter.connect(modGain);
+    babbleTimer = setInterval(()=>{
+      if(!ctx) return;
+      const t = ctx.currentTime;
+      modGain.gain.cancelScheduledValues(t);
+      modGain.gain.setValueAtTime(modGain.gain.value, t);
+      modGain.gain.linearRampToValueAtTime(0.45+Math.random()*0.9, t+0.1+Math.random()*0.15);
+    },130);
+  } else {
+    modGain.gain.cancelScheduledValues(ctx.currentTime);
+    modGain.gain.setValueAtTime(1, ctx.currentTime);
+    noiseSrc.connect(modGain);
+  }
+  noiseSrc.start();
+  noisePlaying = true;
+  el('noiseBtn').textContent = '⏹ Störgeräusch stoppen';
+  el('noiseBtn').classList.add('on');
+}
+function stopNoiseNodes(){
+  if(babbleTimer){ clearInterval(babbleTimer); babbleTimer=null; }
+  if(noiseSrc){ try{noiseSrc.stop();}catch(e){} noiseSrc.disconnect(); noiseSrc=null; }
+  if(noiseFilter){ noiseFilter.disconnect(); noiseFilter=null; }
+}
+function stopNoise(){
+  stopNoiseNodes();
+  noisePlaying=false;
+  el('noiseBtn').textContent = '▶ Störgeräusch starten';
+  el('noiseBtn').classList.remove('on');
+}
+function toggleNoise(){ noisePlaying ? stopNoise() : startNoise(); }
+
+/* ================= SPRACHE (TTS) ================= */
+let voices=[], lastUtteranceText=null;
+function voiceScore(v){
+  const n=v.name.toLowerCase(); let s=0;
+  if(n.includes('natural')) s+=100;
+  if(n.includes('online')) s+=50;
+  if(n.includes('siri')||n.includes('premium')||n.includes('enhanced')) s+=80;
+  if(n.includes('microsoft')) s+=20;
+  if(n.includes('google')) s+=10;
+  return -s;
+}
+function loadVoices(){
+  voices = speechSynthesis.getVoices()
+    .filter(v=> v.lang.toLowerCase().startsWith('de'))
+    .sort((a,b)=> voiceScore(a)-voiceScore(b));
+  const sel = el('voiceSel');
+  sel.innerHTML='';
+  if(voices.length===0){ sel.innerHTML='<option>Standard-Stimme</option>'; return; }
+  voices.forEach((v,i)=>{
+    const o=document.createElement('option'); o.value=i; o.textContent=v.name; sel.appendChild(o);
+  });
+  const idx = voices.findIndex(v=> v.name===S.voiceName);
+  sel.value = idx>=0 ? idx : 0;
+}
+speechSynthesis.onvoiceschanged = loadVoices;
+loadVoices();
+
+function speak(text){
+  ensureCtx();
+  speechSynthesis.cancel();
+  lastUtteranceText = text;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang='de-DE';
+  u.volume = S.speechVol/100;
+  u.rate = S.rate/100;
+  const vi = parseInt(el('voiceSel').value);
+  if(!isNaN(vi) && voices[vi]) u.voice = voices[vi];
+  speechSynthesis.speak(u);
+}
+function repeatLast(){ if(lastUtteranceText) speak(lastUtteranceText); }
+
+/* ================= DATEN: WÖRTER + SÄTZE ================= */
+const WORDS = ["Ring","Spott","Farm","Hang","Geist","Zahl","Hund","Bach","Floh","Lärm","Durst","Teig","Prinz","Aas","Schreck","Nuss","Wolf","Braut","Kern","Stich","Holz","Ruß","Mark","Stein","Glied","Fleck","Busch","Schloss","Bart","Ei","Werk","Dach","Knie","Traum","Paß","Kunst","Mönch","Los","Schrift","Fall","Blatt","Stift","Hohn","Zweck","Aal","Furcht","Leim","Dorf","Tat","Kerl","Schutz","Wind","Maus","Reif","Bank","Klee","Stock","Wuchs","Mist","Gras","Schnee","Wurst","Zahn","Pest","Griff","Laub","Mund","Grab","Heft","Kopf","Reiz","Frist","Drang","Fuß","Öl","Schleim","Takt","Kinn","Stoß","Ball","Punkt","Ziel","Fest","Darm","Schein","Torf","Lamm","Wehr","Glas","Huf","Spind","Pfau","Block","Arm","Neid","Stroh","Wurf","Rest","Blick","Schlag","Seil","Pfand","Netz","Flur","Schild","Ochs","Draht","Hemd","Schmutz","Rat","Tau","Milch","Rost","Kahn","Tier","Brot","Dunst","Haar","Feld","Schwein","Spiel","Moos","Lachs","Glut","Erz","Baum","Sand","Reich","Kuh","Schiff","Wort","Hecht","Mann","Bruch","Schopf","Fels","Kranz","Teich","Dienst","Star","Luft","Band","Kost","Ski","Feind","Herr","Pflug","Tal","Gift","Raum","Ernst","Zeug","Fach","Groll","Speck","Sitz","Moor","Last","Krach","Schwung","Schmerz","Thron","Eis","Funk","Baß","Rind","Lehm","Grog","Blei","Markt","Schilf","Zank","Korb","Lauf","Dank","Sarg","Kies","Schnur","Pech","Horn","Pfeil","Kamm","Turm","Spieß","Laus","Recht","Zopf","Schall","Mais","Fell","Gramm","Ohr","Sieb","Pracht","Lump","Gips","Bad","Sprung","Dreck","Bild","Frosch","Abt","Ruhm","Herz","Mond","Garn","Bau","Sicht","Huhn","Lack","Kreis","Pferd","Pelz","Schlacht","Witz","Form","Stuhl","Teil","Rand","Brett","Schuß","Saft","Pilz","Ort","Kraut","Schwert","Tag","Gleis","Vieh","Spalt","Sohn","Druck","Held","Bahn","List","Flug","Narr","Kork","Reis","Staub","Licht","Tracht","Herd","Not","Wein","Fluch","Kalk","Biß","Grund","Weg","Faß","Schmied","Roß","Amt","Puls","Meer","Graf","Schweiß","Dolch","Ruf","Gas","Wert","Korn","Schrei","Pfahl","Blech","Faust","Rang","Lohn","Nest","Pult","Schicht","Zoll","Heu","Angst","Brust","Dieb","Stand","Knecht","Schaf","Lust","Berg","Docht","Zeit","Schlamm","Kind","Preis","Uhr","Mal","Speer","Fluß","Sinn","Rock","Haupt","Gang","Trieb","Boot","Schmalz","Bund","Stiel","Wachs","Reim","Geld","Tor","Duft","Stück","Arzt","Mehl","Trotz","Pfad","Heil","Brief","Sau","Fracht","Dung","Stern","Loch","Maß","Fink","Schlauch","Reh","Grad","Floß","Hirn","Fuchs","Bein","Napf","Teer","Stolz","Art","Wurm","Ding","Trab","Bett","Kleid","Schatz","Wut","Pflock","Schnitt","Frau","Land","Helm","Bock","Flucht","Scherz","Keil","Rast","Gruß","Wohl","Plan","Krieg","Ast","Pfiff","Weib","Sturm","Fang","Tee","Mord","Frucht","Schlitz","See","Schar","Gold","Leib","Wunsch","Fraß","Stier","Ton","Heer","Dachs","Bauch","Kreuz","Akt","Pfund","Sekt","Glück","Molch","Rad","Fleisch","Welt","Rohr","Park","Flut","Gries","Saum","Krebs","Hand","Gott","Schuh","Film","Damm","Zelt","Koch","Hanf","Leid","Bier","Spruch","Axt"];
+
+const SENTENCES = [
+"Gutes Hören beginnt im Ohr, aber verstanden wird Sprache erst im Gehirn.",
+"Hörtraining hilft dem Gehirn, Sprache aus Störgeräuschen herauszufiltern.",
+"Wer regelmäßig übt, versteht Gespräche in lauter Umgebung spürbar leichter.",
+"Schon zehn Minuten tägliches Hörtraining können das Sprachverstehen messbar verbessern.",
+"Das Gehirn kann Hören wieder lernen, denn es bleibt ein Leben lang formbar.",
+"Forscher nennen diese Anpassungsfähigkeit des Gehirns neuronale Plastizität.",
+"Eine unversorgte Hörminderung lässt die Hörbahnen im Gehirn allmählich verkümmern.",
+"Fachleute sprechen von Hörentwöhnung, wenn das Gehirn lange keine leisen Töne mehr erhält.",
+"Je länger eine Hörminderung unversorgt bleibt, desto schwerer fällt später die Eingewöhnung.",
+"Hörgeräte liefern den Klang, doch das Verstehen muss das Gehirn selbst trainieren.",
+"Die Eingewöhnung an neue Hörgeräte dauert oft mehrere Wochen bis Monate.",
+"Geduld und tägliches Üben sind die wichtigsten Begleiter neuer Hörgeräte.",
+"Die Lancet-Kommission zählt Hörverlust zu den größten beeinflussbaren Risikofaktoren für Demenz.",
+"Studien zufolge erhöht ein unbehandelter Hörverlust im mittleren Alter das Demenzrisiko deutlich.",
+"Die große ACHIEVE-Studie von 2023 zeigte: Hörgeräte können den geistigen Abbau bei Risikopatienten fast halbieren.",
+"Wer schlecht hört, muss Gesprächen mit mehr Anstrengung folgen, und das ermüdet das Gehirn.",
+"Forscher nennen diese ständige Anstrengung beim Zuhören Höranstrengung.",
+"Hörtraining kann die Höranstrengung senken und damit Energie im Alltag sparen.",
+"Unbehandelter Hörverlust führt häufig zu sozialem Rückzug und Einsamkeit.",
+"Einsamkeit gilt in Studien als eigenständiger Risikofaktor für Herz und Gehirn.",
+"Wer wieder besser versteht, nimmt leichter am Familienleben und an Gesprächen teil.",
+"Gutes Sprachverstehen stärkt das Selbstvertrauen in Gesellschaft.",
+"Das Verstehen im Störgeräusch ist die schwierigste Höraufgabe für das Gehirn.",
+"Genau deshalb trainiert dieses Programm das Hören mit Störgeräuschen.",
+"Im Restaurant, im Bus oder auf Familienfeiern ist Sprache fast nie ohne Lärm zu hören.",
+"Studien zeigen, dass gezieltes Training das Verstehen im Lärm verbessern kann.",
+"Das Gehirn lernt beim Training, wichtige Sprachsignale von unwichtigem Lärm zu trennen.",
+"Auch die Aufmerksamkeit für Richtungen und Stimmen lässt sich durch Übung schärfen.",
+"Beide Ohren zu versorgen erleichtert dem Gehirn das Verstehen im Lärm erheblich.",
+"Mit zwei Ohren kann das Gehirn Störgeräusche besser unterdrücken als mit einem.",
+"Regelmäßiges Hören hält die Hörzentren im Gehirn aktiv und leistungsfähig.",
+"Wie ein Muskel wird auch das Hörsystem stärker, wenn es gefordert wird.",
+"Ohne Übung verlernt das Gehirn, ähnliche Laute wie F und S zu unterscheiden.",
+"Hörtraining schärft die Unterscheidung ähnlich klingender Wörter.",
+"Der Freiburger Sprachtest prüft seit 1953 das Verstehen einsilbiger Wörter.",
+"Beim Freiburger Einsilbertest gilt: Je mehr Wörter verstanden werden, desto besser die Versorgung.",
+"Sprachtests im Störgeräusch zeigen, wie gut das Hören im Alltag wirklich funktioniert.",
+"Ein Hörtest beim Fachmann sollte bei Verdacht auf Hörminderung nie aufgeschoben werden.",
+"Im Durchschnitt vergehen sieben bis zehn Jahre, bis Betroffene etwas gegen ihren Hörverlust unternehmen.",
+"Früh versorgte Ohren machen die Rehabilitation deutlich einfacher.",
+"Hörminderung ist keine Frage des Alters allein, auch junge Menschen sind betroffen.",
+"Die Weltgesundheitsorganisation schätzt, dass weltweit über vierhundert Millionen Menschen einen behandlungsbedürftigen Hörverlust haben.",
+"Laut Weltgesundheitsorganisation könnte bis zum Jahr 2050 etwa jeder vierte Mensch von Hörproblemen betroffen sein.",
+"Lärm ist eine der häufigsten vermeidbaren Ursachen für Hörschäden.",
+"Regelmäßige Pausen für die Ohren schützen das Gehör im lauten Alltag.",
+"Wer schlecht hört, hört nicht einfach leiser, sondern oft undeutlicher.",
+"Hohe Töne gehen meist zuerst verloren, dadurch klingen Wörter verwaschen.",
+"Konsonanten wie S, F und T tragen besonders viel Sprachinformation.",
+"Vokale sind laut, aber die leisen Konsonanten machen Sprache verständlich.",
+"Hörtraining lenkt die Aufmerksamkeit gezielt auf diese leisen Sprachanteile.",
+"Konzentration ist beim Hören genauso wichtig wie das Ohr selbst.",
+"Das Gehirn kann lernen, eine Stimme im Stimmengewirr gezielt zu verfolgen.",
+"Fachleute nennen diese Fähigkeit den Cocktailparty-Effekt.",
+"Beim Cocktailparty-Effekt hilft Übung, die gewünschte Stimme festzuhalten.",
+"Müdigkeit nach geselligen Abenden kann ein Zeichen für hohe Höranstrengung sein.",
+"Wer sein Hören trainiert, geht abends oft mit mehr Energie aus Gesprächen.",
+"Auch das Gedächtnis profitiert, wenn das Verstehen weniger Mühe kostet.",
+"Was das Gehirn nicht ins Verstehen stecken muss, bleibt für das Merken übrig.",
+"Mehrere Studien verbinden unbehandelten Hörverlust mit schnellerem geistigen Abbau.",
+"Eine gute Versorgung mit Hörgeräten kann diesen Zusammenhang günstig beeinflussen.",
+"Hörgeräte wirken am besten, wenn sie den ganzen Tag getragen werden.",
+"Nur stundenweises Tragen verzögert die Gewöhnung des Gehirns.",
+"Am Anfang klingen Hörgeräte ungewohnt, das ist normal und vergeht mit Übung.",
+"Die eigene Stimme klingt mit Hörgeräten zunächst fremd, das Gehirn passt sich an.",
+"Alltagsgeräusche wie Papierrascheln wirken anfangs laut, weil das Gehirn sie neu bewerten lernt.",
+"Nach einigen Wochen stuft das Gehirn diese Geräusche wieder als normal ein.",
+"Regelmäßige Nachsorge beim Hörakustiker verbessert das Ergebnis der Versorgung.",
+"Sagen Sie Ihrem Akustiker genau, in welchen Situationen das Verstehen schwerfällt.",
+"Hörtraining ergänzt die Hörgeräteanpassung, es ersetzt sie nicht.",
+"Üben Sie zuerst in ruhiger Umgebung und steigern Sie dann langsam das Störgeräusch.",
+"Kleine regelmäßige Übungseinheiten wirken besser als seltene lange.",
+"Erfolgserlebnisse beim Training motivieren und festigen das Gelernte.",
+"Fehler beim Üben sind erwünscht, denn aus ihnen lernt das Gehirn.",
+"Vorlesen lassen und gleichzeitig Mitlesen ist eine bewährte Übung für zu Hause.",
+"Hörbücher mit Textausgabe verbinden Hören und Lesen auf sinnvolle Weise.",
+"Auch Telefonieren lässt sich üben, am besten mit vertrauten Stimmen.",
+"Musik hören trainiert das Gehör auf andere Weise als Sprache.",
+"Rhythmus und Melodie helfen dem Gehirn, Klangmuster zu erkennen.",
+"Singen im Chor verbindet Hörtraining mit Freude und Gemeinschaft.",
+"Angehörige helfen am meisten, wenn sie langsam und deutlich sprechen, nicht lauter.",
+"Blickkontakt beim Sprechen erleichtert das Verstehen erheblich.",
+"Das Mundbild unterstützt das Gehirn beim Entschlüsseln der Sprache.",
+"Gute Beleuchtung im Raum verbessert deshalb auch das Verstehen.",
+"Hintergrundmusik beim Gespräch auszuschalten entlastet das Hörsystem sofort.",
+"Im Restaurant hilft ein Platz mit dem Rücken zur Wand gegen Störlärm.",
+"Wer nachfragt, zeigt Interesse und keine Schwäche.",
+"Offen mit der Hörminderung umzugehen nimmt Druck aus Gesprächen.",
+"Millionen Menschen in Deutschland leben mit einer Hörminderung, niemand ist damit allein.",
+"Ein Hörsturz oder eine plötzliche Hörverschlechterung gehört rasch in ärztliche Behandlung.",
+"Ohrgeräusche wie Tinnitus können durch Training und Beratung erträglicher werden.",
+"Entspannung verbessert das Hören, denn Stress verengt die Aufmerksamkeit.",
+"Ausreichend Schlaf hilft dem Gehirn, das Gehörte zu verarbeiten und zu speichern.",
+"Bewegung fördert die Durchblutung, auch die des Innenohrs.",
+"Rauchen und unbehandelter Bluthochdruck können dem Gehör schaden.",
+"Gesunde Gefäße sind die Lebensader der empfindlichen Haarzellen im Innenohr.",
+"Die Haarzellen im Innenohr wachsen nicht nach, Vorsorge ist deshalb so wichtig.",
+"Moderne Hörsysteme können Störlärm dämpfen, das Training des Gehirns bleibt trotzdem wichtig.",
+"Technik und Training zusammen ergeben das beste Sprachverstehen.",
+"Jede geübte Minute zahlt auf das Konto des besseren Verstehens ein.",
+"Dranbleiben lohnt sich, denn gutes Hören bedeutet Lebensqualität."
+];
+
+/* ================= STATISTIK (persistent) ================= */
+function today(){ return new Date().toISOString().slice(0,10); }
+function loadDays(){ return JSON.parse(localStorage.getItem('ht_days')||'{}'); }
+function saveDays(d){ localStorage.setItem('ht_days', JSON.stringify(d)); }
+
+function recordResult(ok){
+  const days = loadDays();
+  const d = days[today()] || {t:0,c:0,by:{}};
+  d.t++; if(ok) d.c++;
+  const b = d.by[currentEx] || {t:0,c:0};
+  b.t++; if(ok) b.c++;
+  d.by[currentEx] = b;
+  days[today()] = d;
+  saveDays(days);
+}
+
+function renderHome(){
+  const days = loadDays();
+  const d = days[today()] || {t:0,c:0};
+  el('hToday').textContent = d.t;
+  el('hQuote').textContent = d.t ? Math.round(d.c/d.t*100)+'%' : '–';
+  let total=0; Object.values(days).forEach(x=> total+=x.t);
+  el('hTotal').textContent = total;
+  let streak=0; const dt=new Date();
+  while(true){
+    const k = dt.toISOString().slice(0,10);
+    if(days[k] && days[k].t>0){ streak++; dt.setDate(dt.getDate()-1); } else break;
+  }
+  el('hStreak').textContent = streak;
+  const h = new Date().getHours();
+  el('greeting').textContent = h<11 ? 'Guten Morgen' : h<18 ? 'Guten Tag' : 'Guten Abend';
+}
+
+function renderStats(){
+  const days = loadDays();
+  const bars = el('bars'), dlbl = el('dlbl');
+  bars.innerHTML=''; dlbl.innerHTML='';
+  const names = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+  let wt=0, wc=0;
+  for(let i=6;i>=0;i--){
+    const dt = new Date(); dt.setDate(dt.getDate()-i);
+    const k = dt.toISOString().slice(0,10);
+    const d = days[k];
+    const q = d && d.t ? d.c/d.t : 0;
+    if(d){ wt+=d.t; wc+=d.c; }
+    const bar = document.createElement('div');
+    bar.style.height = Math.max(3, Math.round(q*100)) + '%';
+    if(!d || !d.t) bar.style.background = '#d7dee8';
+    bars.appendChild(bar);
+    const s = document.createElement('span');
+    s.textContent = i===0 ? 'Heute' : names[dt.getDay()];
+    dlbl.appendChild(s);
+  }
+  el('sWeekQuote').textContent = wt ? Math.round(wc/wt*100)+'%' : '–';
+  el('sWeekTrials').textContent = wt;
+  const NAMES = {zahlen:'Zahlen', woerter:'Wörter', saetze:'Sätze'};
+  let html = '<label>Quote nach Übung (gesamt)</label>';
+  const agg = {};
+  Object.values(days).forEach(d=>{
+    Object.entries(d.by||{}).forEach(([k,v])=>{
+      const a = agg[k] || {t:0,c:0}; a.t+=v.t; a.c+=v.c; agg[k]=a;
+    });
+  });
+  ['zahlen','woerter','saetze'].forEach(k=>{
+    const a = agg[k];
+    html += '<div><span>'+NAMES[k]+'</span><b>'+(a&&a.t ? Math.round(a.c/a.t*100)+'% ('+a.t+')' : '–')+'</b></div>';
+  });
+  el('typeStats').innerHTML = html;
+}
+
+function resetStats(){
+  if(confirm('Gesamten Verlauf wirklich löschen?')){
+    localStorage.removeItem('ht_days');
+    renderStats(); renderHome();
+  }
+}
+
+/* ================= ÜBUNGS-LOGIK ================= */
+let currentEx = null, numTarget = null, wordTargets = null, currentSentence = null, sentDeck = [];
+const DIGIT_WORDS = ['null','eins','zwei','drei','vier','fünf','sechs','sieben','acht','neun'];
+const EX_META = {
+  zahlen: {title:'🔢 Zahlen verstehen', hint:'Tippe die gehörten Ziffern ein.'},
+  woerter:{title:'🗣️ Wörter verstehen', hint:'3 Wörter werden vorgespielt. Tippe sie ein, Reihenfolge egal.'},
+  saetze: {title:'💬 Sätze hören', hint:'Höre den Satz, zeige dann den Text an und bewerte dich selbst.'}
+};
+
+function openEx(type){
+  currentEx = type;
+  nav('ex');
+  el('exTitle').textContent = EX_META[type].title;
+  el('exHint').textContent = EX_META[type].hint;
+  el('exZahlenOpts').hidden = type!=='zahlen';
+  el('numInput').hidden = type!=='zahlen';
+  el('wordInput').hidden = type!=='woerter';
+  el('checkBtn').hidden = type==='saetze';
+  el('showBtn').hidden = type!=='saetze';
+  el('sentText').hidden = true;
+  el('sentRate').hidden = true;
+  el('numInput').disabled = true;
+  el('wordInput').disabled = true;
+  el('checkBtn').disabled = true;
+  el('repeatBtn').disabled = true;
+  el('showBtn').disabled = true;
+  el('exFb').textContent = '';
+  el('exFb').className = 'feedback';
+}
+
+function playStim(){
+  el('exFb').textContent=''; el('exFb').className='feedback';
+  if(currentEx==='zahlen'){
+    if(el('numMode').value==='tens'){
+      const n = 21+rnd(79);
+      numTarget = String(n);
+      el('numInput').maxLength=2; el('numInput').placeholder='__';
+      speak(String(n));
+    } else {
+      const d=[rnd(10),rnd(10),rnd(10)];
+      numTarget = d.join('');
+      el('numInput').maxLength=3; el('numInput').placeholder='___';
+      speak(d.map(x=>DIGIT_WORDS[x]).join(', '));
+    }
+    el('numInput').value=''; el('numInput').disabled=false; el('checkBtn').disabled=false;
+    el('numInput').focus();
+  }
+  if(currentEx==='woerter'){
+    const pool=[...WORDS]; wordTargets=[];
+    for(let i=0;i<3;i++) wordTargets.push(pool.splice(rnd(pool.length),1)[0]);
+    speak(wordTargets.join(', '));
+    el('wordInput').value=''; el('wordInput').disabled=false; el('checkBtn').disabled=false;
+    el('wordInput').focus();
+  }
+  if(currentEx==='saetze'){
+    if(sentDeck.length===0){ sentDeck = SENTENCES.map((_,i)=>i); shuffle(sentDeck); }
+    currentSentence = SENTENCES[sentDeck.pop()];
+    speak(currentSentence);
+    el('sentText').hidden=true; el('sentRate').hidden=true;
+    el('showBtn').disabled=false;
+  }
+  el('repeatBtn').disabled=false;
+}
+
+function normWord(w){ return w.toLowerCase().replace(/ß/g,'ss').replace(/[^a-zäöü]/g,''); }
+
+function checkAnswer(){
+  if(currentEx==='zahlen' && numTarget!==null){
+    const ok = el('numInput').value.trim()===numTarget;
+    feedback(ok, ok?'✔ Richtig!':'✘ Falsch, richtig war: '+numTarget.split('').join(' '));
+    recordResult(ok);
+    numTarget=null; el('numInput').disabled=true; el('checkBtn').disabled=true;
+  }
+  if(currentEx==='woerter' && wordTargets){
+    const typed = el('wordInput').value.split(/[\s,;.]+/).map(normWord).filter(w=>w);
+    let hits=0;
+    const detail = wordTargets.map(t=>{
+      const f = typed.includes(normWord(t));
+      if(f) hits++;
+      return (f?'✔ ':'✘ ')+t;
+    });
+    const ok = hits>=2;
+    feedback(ok, hits+' von 3 richtig. '+detail.join('  '));
+    recordResult(ok);
+    wordTargets=null; el('wordInput').disabled=true; el('checkBtn').disabled=true;
+  }
+}
+
+function showSentence(){
+  if(!currentSentence) return;
+  el('sentText').textContent = '„'+currentSentence+'“';
+  el('sentText').hidden=false;
+  el('sentRate').hidden=false;
+}
+
+function rateSentence(ok){
+  if(!currentSentence) return;
+  recordResult(ok);
+  feedback(ok, ok?'✔ Super, weiter so!':'✘ Kein Problem, Lärm etwas leiser stellen und weiter üben.');
+  currentSentence=null;
+  el('sentRate').hidden=true; el('showBtn').disabled=true;
+}
+
+function feedback(ok,msg){
+  el('exFb').textContent = msg;
+  el('exFb').className = 'feedback '+(ok?'ok':'bad');
+}
+
+/* ================= REGLER-SYNC (Einstellungen + Übungsscreen) ================= */
+function applyVols(){
+  el('noiseVol').value=S.noiseVol; el('exNoise').value=S.noiseVol;
+  el('speechVol').value=S.speechVol; el('exSpeech').value=S.speechVol;
+  el('rate').value=S.rate;
+  el('noiseVal').textContent=S.noiseVol+'%'; el('exNoiseVal').textContent=S.noiseVol+'%';
+  el('speechVal').textContent=S.speechVol+'%'; el('exSpeechVal').textContent=S.speechVol+'%';
+  el('rateVal').textContent=(S.rate/100).toFixed(2);
+  el('noiseType').value=S.noiseType;
+  if(noiseGain && ctx) noiseGain.gain.setTargetAtTime(sliderToGain(S.noiseVol), ctx.currentTime, 0.05);
+}
+function bindVol(id, key){
+  el(id).addEventListener('input', e=>{
+    S[key]=parseInt(e.target.value); saveS(); applyVols();
+  });
+}
+bindVol('noiseVol','noiseVol'); bindVol('exNoise','noiseVol');
+bindVol('speechVol','speechVol'); bindVol('exSpeech','speechVol');
+bindVol('rate','rate');
+el('noiseType').addEventListener('change', e=>{
+  S.noiseType=e.target.value; saveS();
+  if(noisePlaying) startNoise();
+});
+el('voiceSel').addEventListener('change', e=>{
+  const v = voices[parseInt(e.target.value)];
+  if(v){ S.voiceName=v.name; saveS(); }
+});
+el('numInput').addEventListener('keydown', e=>{ if(e.key==='Enter') checkAnswer(); });
+el('wordInput').addEventListener('keydown', e=>{ if(e.key==='Enter') checkAnswer(); });
+
+applyVols();
+renderHome();
+
+if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
